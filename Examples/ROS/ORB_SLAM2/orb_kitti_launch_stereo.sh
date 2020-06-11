@@ -1,0 +1,1 @@
+rosrun ORB_SLAM2 Stereo /home/wang/ROS_WS/orbslam_ws/src/ORB_SLAM2/Vocabulary/ORBvoc.txt /home/wang/ROS_WS/orbslam_ws/src/ORB_SLAM2/config/KITTI0930stereo.yaml false /camera/left/image_raw:=/kitti/camera_color_left/image_raw /camera/right/image_raw:=/kitti/camera_color_right/image_raw

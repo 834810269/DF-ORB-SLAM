@@ -1,0 +1,1 @@
+rosrun ORB_SLAM2 Mono /home/wang/ROS_WS/orbslam_ws/src/ORB_SLAM2/Vocabulary/ORBvoc.txt /home/wang/ROS_WS/orbslam_ws/src/ORB_SLAM2/config/KITTI0930mono.yaml /camera/image_raw:=/kitti/camera_color_left/image_raw
