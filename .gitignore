@@ -1,5 +1,5 @@
 CMakeLists.txt.user
-选区_200.png
+res.png
 Examples/Monocular/mono_euroc
 Examples/Monocular/mono_kitti
 Examples/Monocular/mono_tum
@@ -22,4 +22,5 @@ Vocabulary/ORBvoc.txt
 build/
 *~
 lib/
+.idea/
 
