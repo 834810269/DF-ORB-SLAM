@@ -1,5 +1,4 @@
 CMakeLists.txt.user
-res.png
 Examples/Monocular/mono_euroc
 Examples/Monocular/mono_kitti
 Examples/Monocular/mono_tum
