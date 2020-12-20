@@ -23,4 +23,5 @@ build/
 lib/
 .idea/
 .git/
+cmake-build-debug/
 
