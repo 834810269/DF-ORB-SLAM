@@ -23,9 +23,12 @@
 #include<algorithm>
 #include<fstream>
 #include<chrono>
+#include <thread>
 
 #include<ros/ros.h>
+#include <ros/console.h>
 #include <cv_bridge/cv_bridge.h>
+#include <tf/transform_listener.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -33,6 +36,8 @@
 #include<opencv2/core/core.hpp>
 
 #include"../../../include/System.h"
+//#include "../include/utils/message_utils.h"
+//#include "../include/utils/tic_toc.h"
 
 using namespace std;
 
@@ -44,6 +49,7 @@ public:
     void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD);
 
     ORB_SLAM2::System* mpSLAM;
+    //ORB_SLAM2_DENSE::MessageUtils *mpMsgUtils_;
 };
 
 int main(int argc, char **argv)
@@ -56,10 +62,21 @@ int main(int argc, char **argv)
         cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;        
         ros::shutdown();
         return 1;
-    }    
+    }
+
+    //ros::NodeHandle nh;
+    //ros::NodeHandle private_nh("~");
+    //tf::TransformListener listener;
+
+    // get parameters
+    //bool use_rviz;
+    //private_nh.param("use_rviz", use_rviz, false);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, true,false);
+
+    // publish necessary message of SLAM
+    //ORB_SLAM2_DENSE::MessageUtils msgUtils(listener, &SLAM);
 
     ImageGrabber igb(&SLAM);
 
@@ -110,6 +127,15 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     }
 
     mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+
+    // publish
+
+    //mpMsgUtils_->publishOdometry();
+    //mpMsgUtils_->publishFrame();
+    //mpMsgUtils_->publishPointCloud();
+
+
+
 }
 
 

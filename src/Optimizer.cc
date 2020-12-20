@@ -618,6 +618,14 @@ int Optimizer::PoseOptimizationEM(Frame *pFrame)
             float weight = 1-abs(proj_dep_temp-kp_dep)/abs(proj_dep_temp+kp_dep);
             e->setInformation(Eigen::Matrix2d::Identity()*invSigma2*weight);
 
+	    //if(it == 3){
+            //    e->computeError();
+		//const float chi2 = e->chi2();
+	        //if(chi2>chi2Mono[it]){
+                    //pFrame->mvbOutlier[idx]=true;
+                    //nBad++;
+                //}            
+	    //}           
             //if(it==3){
             //    float diff = abs(proj_dep_temp-kp_dep);
             //    if(diff>0.1) {
@@ -642,6 +650,14 @@ int Optimizer::PoseOptimizationEM(Frame *pFrame)
             float weight = 1-abs(proj_dep_temp-kp_dep)/abs(proj_dep_temp+kp_dep);
             e->setInformation(Eigen::Matrix3d::Identity()*invSigma2*weight);
 
+	    //if(it == 3){
+                //e->computeError();
+		//const float chi2 = e->chi2();
+	        //if(chi2>chi2Stereo[it]){
+                    //pFrame->mvbOutlier[idx]=true;
+                    //nBad++;
+                //}            
+	    //}  
             //if(it==3){
             //    float diff = abs(proj_dep_temp-kp_dep);
             //    if(diff>0.1) {

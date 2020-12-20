@@ -28,14 +28,17 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV 3.0 QUIET)
+find_package(OpenCV 3.4 QUIET)
 if(NOT OpenCV_FOUND)
    find_package(OpenCV 2.4.3 QUIET)
    if(NOT OpenCV_FOUND)
       message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
    endif()
 endif()
-
+find_package(PCL 1.7 REQUIRED)
+if(PCL_FOUND)
+   message("PCL FOUND")
+endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -52,7 +55,11 @@ ${PROJECT_SOURCE_DIR}/include
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 ${OpenCV_INCLUDE_DIRS}
+${PCL_INCLUDE_DIRS}
 )
+
+add_definitions( ${PCL_DEFINITIONS} )
+link_directories( ${PCL_LIBRARY_DIRS} )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
@@ -76,12 +83,16 @@ src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
 src/Initializer.cc
 src/Viewer.cc
+src/pointcloudmapping.cpp
+src/SLIC.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
+/usr/lib/x86_64-linux-gnu/libtiff.so.5 
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
+${PCL_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 /usr/lib/x86_64-linux-gnu/libglog.so

@@ -48,7 +48,7 @@ Frame::Frame(const Frame &frame)
      mfScaleFactor(frame.mfScaleFactor), mfLogScaleFactor(frame.mfLogScaleFactor),
      mvScaleFactors(frame.mvScaleFactors), mvInvScaleFactors(frame.mvInvScaleFactors),
      mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),
-     mvTracked(frame.mvTracked),mvpobs(frame.mvpobs)
+     mvTracked(frame.mvTracked),mvPreObsID(frame.mvPreObsID)
 {
     for(int i=0;i<FRAME_GRID_COLS;i++)
         for(int j=0; j<FRAME_GRID_ROWS; j++)
@@ -646,8 +646,8 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
     // Add tracking information --wang
-    mvTracked = vector<int>(N,1);
-    mvpobs.resize(N);
+    mvTracked.resize(N,1);
+    mvPreObsID.resize(N,-1);
 
     for(int i=0; i<N; i++)
     {
@@ -659,7 +659,7 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
 
         const float d = imDepth.at<float>(v,u);
 
-        if(d>0)
+        if(d>0.1)
         {
             mvDepth[i] = d;
             mvuRight[i] = kpU.pt.x-mbf/d;

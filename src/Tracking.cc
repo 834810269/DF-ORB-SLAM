@@ -45,8 +45,9 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, shared_ptr<PointCloudMapping> pPointCloud, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
+    mpPointCloudMapping(pPointCloud),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
@@ -238,17 +239,17 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 	//mbf = double((int(max/10)+1)*10);
         //cout << endl << "baseline mult fx: " << mbf << endl;
     //}
-    cv::Scalar mean;  //均值
-    cv::Scalar stddev;  //标准差
+    //cv::Scalar mean;  //均值
+    //cv::Scalar stddev;  //标准差
 
-    cv::meanStdDev( mImDepth(cv::Rect(10,10,mImDepth.cols-10,mImDepth.rows-10)), mean, stddev );  //计算均值和标准差
-    double mean_pxl = mean.val[0];
-    double stddev_pxl = stddev.val[0];
+    //cv::meanStdDev( mImDepth(cv::Rect(10,10,mImDepth.cols-10,mImDepth.rows-10)), mean, stddev );  //计算均值和标准差
+    //double mean_pxl = mean.val[0];
+    //double stddev_pxl = stddev.val[0];
     //if(mImPre.empty()){
-    mbf = mean_pxl+2.0*stddev_pxl;
-	//}        
-	mThDepth = mean_pxl+0.5*stddev_pxl;
-    cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
+    //mbf = mean_pxl+2.0*stddev_pxl;
+    //}        
+    //mThDepth = mean_pxl+0.5*stddev_pxl;
+    //cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
 
     //}
 
@@ -500,6 +501,7 @@ void Tracking::Track()
                 mlpTemporalPointsTri.clear();
 
             }
+            idk++; // for pointcloud mapping
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
@@ -855,49 +857,15 @@ void Tracking::UpdateLastFrame()
     // Create "visual odometry" MapPoints
     // We sort points according to their measured depth by the stereo/RGB-D sensor
     vector<pair<float,int> > vDepthIdx;
-    vector<int> vTriIdx;
     vDepthIdx.reserve(mLastFrame.N);
     for(int i=0; i<mLastFrame.N;i++)
     {
-        if(mLastFrame.mvTracked[i]>=9){
-            vTriIdx.push_back(i);
-            continue;
-        }
         float z = mLastFrame.mvDepth[i];
-        if(z>0)
+        if(z>0.1)
         {
             vDepthIdx.push_back(make_pair(z,i));
         }
     }
-
-    int nPoints = 0;
-
-    if(false){//!vTriIdx.empty()){
-
-        cout<<" the number of points to be triangulated: "<<vTriIdx.size()<<endl;
-#pragma omp parallel for
-        for(int i=0;i<vTriIdx.size();i+=3){
-            int idx=vTriIdx[i];
-            auto &obs=mLastFrame.mvpobs[idx];
-            obs.push_back(make_pair(mLastFrame.mTcw,mLastFrame.mvKeysUn[idx]));
-            //cout<<" obs num: "<<obs.size()<<" tracked: "<<mLastFrame.mvTracked[idx]<<endl;
-            cv::Mat x3D = triangulate(obs);
-            mLastFrame.mvpobs[idx].clear();
-            mLastFrame.mvTracked[idx]=1;
-            MapPoint* pNewMP = new MapPoint(x3D,mpMap,&mLastFrame,idx);
-            pNewMP->SetFlag();
-            mLastFrame.mvpMapPoints[idx]=pNewMP;
-            mlpTemporalPointsTri.push_back(pNewMP);
-
-            nPoints++;
-        }
-        //mLastFrame.mvTracked.resize(mLastFrame.N,1);
-        //mLastFrame.mvpobs.clear();
-        //mLastFrame.mvpobs.resize(mLastFrame.N);
-    }
-
-    if(!mbOnlyTracking)
-        return; // Only triangulate some points
 
     if(vDepthIdx.empty())
         return;
@@ -906,7 +874,7 @@ void Tracking::UpdateLastFrame()
 
     // We insert all close points (depth<mThDepth)
     // If less than 100 close points, we insert the 100 closest ones.
-
+    int nPoints = 0;
     for(size_t j=0; j<vDepthIdx.size();j++)
     {
         int i = vDepthIdx[j].second;
@@ -916,10 +884,10 @@ void Tracking::UpdateLastFrame()
         MapPoint* pMP = mLastFrame.mvpMapPoints[i];
         if(!pMP)
             bCreateNew = true;
-        //else if(pMP->Observations()<1)
-       // {
-        //    bCreateNew = true;
-        //}
+        else if(pMP->Observations()<1)
+        {
+            bCreateNew = true;
+        }
 
         if(bCreateNew)
         {
@@ -941,27 +909,24 @@ void Tracking::UpdateLastFrame()
     }
 }
 
-cv::Mat Tracking::triangulate(const vector<pair<cv::Mat, cv::KeyPoint>> obs) {
-    //assert(obs.size()==4);
-    //cout<<obs.size()<<endl;
-    Eigen::MatrixXd SVD_D(2*obs.size(),4);
-    int svd_id=0;
-    for(auto pair:obs) {
-        cv::Mat Tcw = pair.first;
-        Eigen::Matrix<double,3,4> P;
-        cv::cv2eigen(Tcw.rowRange(0,3),P);
-        cv::KeyPoint p = pair.second;
-        Eigen::Vector2d uv ((p.pt.x-mLastFrame.cx)*mLastFrame.invfx,
-                (p.pt.y-mLastFrame.cy)*mLastFrame.invfy);
-        SVD_D.row(svd_id++)=uv[0]*P.row(2)-P.row(0);
-        SVD_D.row(svd_id++)=uv[1]*P.row(2)-P.row(1);
-    }
+cv::Mat Tracking::Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2)
+{
+    cv::Mat A(4,4,CV_32F);
+    double pre_x = (kp1.pt.x-mLastFrame.cx)*mLastFrame.invfx;
+    double pre_y = (kp1.pt.y-mLastFrame.cy)*mLastFrame.invfy;
+    double cur_x = (kp2.pt.x-mCurrentFrame.cx)*mCurrentFrame.invfx;
+    double cur_y = (kp2.pt.y-mCurrentFrame.cy)*mCurrentFrame.invfy;
+    
+    A.row(0) = pre_x*P1.row(2)-P1.row(0);
+    A.row(1) = pre_y*P1.row(2)-P1.row(1);
+    A.row(2) = cur_x*P2.row(2)-P2.row(0);
+    A.row(3) = cur_y*P2.row(2)-P2.row(1);
 
-    Eigen::Vector4d u4=Eigen::JacobiSVD<Eigen::MatrixXd>(SVD_D,Eigen::ComputeThinV).matrixV().rightCols<1>();
-    Eigen::Vector3d res=u4.topRows<3>()/u4[3];
-    cv::Mat x3Dc = (cv::Mat_<float>(3,1) << res[0], res[1], res[2]);
-
-    return x3Dc;
+    cv::Mat u,w,vt;
+    cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
+    cv::Mat x3D = vt.row(3).t();
+    x3D = x3D.rowRange(0,3)/x3D.at<float>(3);
+    return x3D;
 }
 
 bool Tracking::TrackWithMotionModel()
@@ -979,7 +944,7 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        th=15;
+        th=7;
     else
         th=7;
     //int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2*th,mSensor==System::MONOCULAR);
@@ -1238,62 +1203,43 @@ void Tracking::CreateNewKeyFrame()
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;
 
-    //int th=0.8*(mCurrentFrame.mnId-mnLastKeyFrameId);
-    //th=th>2?th:2;
-    //cout<<" the triangulate tracking count th "<<th<<endl;
-
-
     if(mSensor!=System::MONOCULAR)
     {
         mCurrentFrame.UpdatePoseMatrices();
 
-        // We sort points by the measured depth by the stereo/RGBD sensor.
-        // We create all those MapPoints whose depth < mThDepth.
-        // If there are less than 100 close points we create the 100 closest.
-        vector<pair<float,int> > vDepthIdx;
-        vector<int> vTriIdx;
-        vDepthIdx.reserve(mCurrentFrame.N);
-        for(int i=0; i<mCurrentFrame.N; i++)
+        // add triangulation
+        //int nPointTri=0;
+        //int th=mCurrentFrame.mnId-mnLastKeyFrameId;
+        //cout<<" the keyframe sample: "<<th<<endl;
+        if(false)
         {
-
-            if(mCurrentFrame.mvTracked[i]>=7){
-                vTriIdx.push_back(i);
-                continue;
-            }
-            float z = mCurrentFrame.mvDepth[i];
-            if(z>0)
+            cout<<" Do triangulation first! "<<endl;
+            vector<pair<int,int>> vTriIdx;
+            for(int i=0; i<mCurrentFrame.N; i++)
             {
-                vDepthIdx.push_back(make_pair(z,i));
+                if (mCurrentFrame.mvTracked[i] >= 4 && mCurrentFrame.mvPreObsID[i]!=-1)
+                {
+                    vTriIdx.push_back(make_pair(mCurrentFrame.mvTracked[i], i));
+                }
             }
-
-            /*
-            // turn points created by triangulation to global mappoints
-            MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
-            if(pMP && pMP->isTried){
-                cout <<"HELLO"<<endl;
-                cv::Mat x3D=pMP->GetWorldPos();
-                MapPoint* pNewMP = new MapPoint(x3D,pKF,mpMap);
-                pNewMP->AddObservation(pKF,i);
-                pKF->AddMapPoint(pNewMP,i);
-                pNewMP->ComputeDistinctiveDescriptors();
-                pNewMP->UpdateNormalAndDepth();
-                mpMap->AddMapPoint(pNewMP);
-
-                mCurrentFrame.mvpMapPoints[i]=pNewMP;
-            }
-             */
-        }
-
-
-        if(false){
             cout<<" the number of points to be triangulated: "<<vTriIdx.size()<<endl;
-#pragma omp parallel for
-            for(int i=0;i<vTriIdx.size();i++){
-                int idx=vTriIdx[i];
-                auto &obs=mCurrentFrame.mvpobs[idx];
-                obs.push_back(make_pair(mCurrentFrame.mTcw,mCurrentFrame.mvKeysUn[idx]));
+            // turn points created by triangulation to global mappoints
+            sort(vTriIdx.begin(),vTriIdx.end(),[](pair<int,int> &a,pair<int,int> &b){
+                return a.first>b.first;
+            });
+            //cout<<vTriIdx.begin()->first<<"  "<<vTriIdx.back().first<<endl;
+            for(int i=0;i<vTriIdx.size();i++)
+            {
+                int idx=vTriIdx[i].second;
+                MapPoint* pMP = mCurrentFrame.mvpMapPoints[idx];
+                if(pMP) continue;
+                int pre_idx = mCurrentFrame.mvPreObsID[idx];
+
+                cv::Mat x3D = Triangulate(mLastFrame.mvKeysUn[pre_idx], mCurrentFrame.mvKeysUn[idx], mLastFrame.mTcw, mCurrentFrame.mTcw);
                 //cout<<" obs num: "<<obs.size()<<" tracked: "<<mLastFrame.mvTracked[idx]<<endl;
-                cv::Mat x3D = triangulate(obs);
+                
+                if(x3D.at<float>(2,0)<0) continue;
+		        // cout<<x3D<<endl;
                 MapPoint* pNewMP = new MapPoint(x3D,pKF,mpMap);
                 pNewMP->SetFlag();
                 pNewMP->AddObservation(pKF,i);
@@ -1303,13 +1249,27 @@ void Tracking::CreateNewKeyFrame()
                 mpMap->AddMapPoint(pNewMP);
 
                 mCurrentFrame.mvpMapPoints[i]=pNewMP;
-
+                //nPointTri++;
+                //if(nPointTri>50) break;
             }
         }
 
         mCurrentFrame.mvTracked.resize(mCurrentFrame.N,1);
-        mCurrentFrame.mvpobs.clear();
-        mCurrentFrame.mvpobs.resize(mCurrentFrame.N);
+        mCurrentFrame.mvPreObsID.resize(mCurrentFrame.N,-1);
+
+        // We sort points by the measured depth by the stereo/RGBD sensor.
+        // We create all those MapPoints whose depth < mThDepth.
+        // If there are less than 100 close points we create the 100 closest.
+        vector<pair<float,int> > vDepthIdx;
+        vDepthIdx.reserve(mCurrentFrame.N);
+        for(int i=0; i<mCurrentFrame.N; i++)
+        {
+            float z = mCurrentFrame.mvDepth[i];
+            if(z>0.1)
+            {
+                vDepthIdx.push_back(make_pair(z,i));
+            }
+        }
 
         if(!vDepthIdx.empty())
         {
@@ -1326,7 +1286,7 @@ void Tracking::CreateNewKeyFrame()
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
                 if(!pMP)
                     bCreateNew = true;
-                else if(pMP->Observations()<1 && !pMP->isTried)
+                else if(pMP->Observations()<1)
                 {
                     bCreateNew = true;
                     mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
@@ -1360,6 +1320,11 @@ void Tracking::CreateNewKeyFrame()
 
     mpLocalMapper->SetNotStop(false);
 
+    // pointcloud mapping
+    if(mpPointCloudMapping!=NULL) {
+        vector<KeyFrame *> vpKFs = mpMap->GetAllKeyFrames();
+        mpPointCloudMapping->insertKeyFrame(pKF, mImRGB, mImDepth, idk, vpKFs, mThDepth);
+    }
     mnLastKeyFrameId = mCurrentFrame.mnId;
     mpLastKeyFrame = pKF;
 }

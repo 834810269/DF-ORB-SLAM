@@ -147,8 +147,7 @@ public:
 
     // tracking information --wang
     std::vector<int> mvTracked;
-    std::vector<std::vector<std::pair<cv::Mat,cv::KeyPoint>>> mvpobs;
-
+    std::vector<int> mvPreObsID;
 
     // Bag of Words Vector structures.
     DBoW2::BowVector mBowVec;

@@ -30,7 +30,7 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+               const bool bUseViewer, const bool bMapping):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
@@ -81,17 +81,23 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpFrameDrawer = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
+    // Initialize pointcloud mapping thread
+    if(bMapping){
+        mpPointCloudMapping = std::allocate_shared<PointCloudMapping>(Eigen::aligned_allocator<PointCloudMapping>(),strSettingsFile, bUseViewer);
+    }else{
+        mpPointCloudMapping = NULL;
+    }
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+                             mpMap, mpPointCloudMapping, mpKeyFrameDatabase, strSettingsFile, mSensor); // add pointcloud mapping
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
     mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
 
     //Initialize the Loop Closing thread and launch
-    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
+    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR, mpPointCloudMapping); // add pointcloud mapping
     mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
     //Initialize the Viewer thread and launch
@@ -302,6 +308,9 @@ void System::Shutdown()
 {
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
+    if(mpPointCloudMapping!=NULL){
+	mpPointCloudMapping->shutdown(); // add pointcloud mapping
+    }
     if(mpViewer)
     {
         mpViewer->RequestFinish();
@@ -487,6 +496,16 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+void System::save()
+{
+    mpPointCloudMapping->save();
+}
+
+int System::getloopcount()
+{
+    return mpLoopCloser->loop_count;
 }
 
 } //namespace ORB_SLAM

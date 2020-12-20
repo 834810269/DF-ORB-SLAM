@@ -40,6 +40,10 @@
 
 #include <mutex>
 
+// pointcloud mapping
+#include "pointcloudmapping.h"
+class PointCloudMapping;
+
 namespace ORB_SLAM2
 {
 
@@ -54,7 +58,7 @@ class Tracking
 {  
 
 public:
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap,
+    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap, shared_ptr<PointCloudMapping> pPointCloud,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
@@ -151,7 +155,7 @@ protected:
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();
 
-    cv::Mat triangulate(const vector<pair<cv::Mat,cv::KeyPoint>> obs);
+    cv::Mat Triangulate(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &P1, const cv::Mat &P2);
 
     // In case of performing only localization, this flag is true when there are no matches to
     // points in the map. Still tracking will continue if there are enough matches with temporal points.
@@ -226,6 +230,10 @@ protected:
 
     list<MapPoint*> mlpTemporalPoints;
     list<MapPoint*> mlpTemporalPointsTri;
+
+    // pointcloud mapping
+    shared_ptr<PointCloudMapping> mpPointCloudMapping;
+    int idk=1;
 
 };
 

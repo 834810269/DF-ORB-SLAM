@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.4.6)
+
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
@@ -30,32 +31,75 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake_modules)
 
-find_package(OpenCV 3.0 QUIET)
+find_package(catkin REQUIRED COMPONENTS
+        roscpp
+        std_msgs
+        sensor_msgs
+        geometry_msgs
+        nav_msgs
+        cv_bridge
+        tf
+        tf_conversions
+        pcl_ros
+        pcl_conversions
+)
+
+find_package(OpenCV 3.4 QUIET)
+if(OpenCV_FOUND)
+	message("OPENCV  3 4 FOUND")
+endif()
 if(NOT OpenCV_FOUND)
    find_package(OpenCV 2.4.3 QUIET)
    if(NOT OpenCV_FOUND)
       message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
    endif()
 endif()
+find_package(PCL REQUIRED)
+IF(PCL_FOUND)
+   MESSAGE("FIND PCL")
+ENDIF()
+
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+
+catkin_package(
+        INCLUDE_DIRS
+        ${PROJECT_SOURCE_DIR}/../../../include
+        #  LIBRARIES nav_goal
+        CATKIN_DEPENDS
+        roscpp
+        std_msgs
+        sensor_msgs
+        geometry_msgs
+        cv_bridge
+        tf
+        #  DEPENDS system_lib
+)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/../../../
 ${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
+${catkin_INCLUDE_DIRS}
+${PROJECT_SOURCE_DIR}/include
+${PCL_INCLUDE_DIRS}
 )
 
 set(LIBS 
+/usr/lib/x86_64-linux-gnu/libtiff.so.5 
 ${OpenCV_LIBS} 
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
+${PCL_LIBRARIES}
+${catkin_LIBRARIES}
 )
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)
 
 # Node for monocular camera
 rosbuild_add_executable(Mono
@@ -64,7 +108,7 @@ src/ros_mono.cc
 
 target_link_libraries(Mono
 ${LIBS}
-/usr/lib/x86_64-linux-gnu/libtiff.so.5
+/usr/local/lib/libtiff.so.5
 boost_system boost_filesystem
 )
 
@@ -76,18 +120,19 @@ src/ros_stereo.cc
 
 target_link_libraries(Stereo
 ${LIBS}
-/usr/lib/x86_64-linux-gnu/libtiff.so.5
+/usr/local/lib/libtiff.so.5
 boost_system boost_filesystem
 )
 
 # Node for RGB-D camera
 rosbuild_add_executable(RGBD
 src/ros_rgbd.cc
+# src/utils/message_utils.cpp
 )
 
 target_link_libraries(RGBD
 ${LIBS}
-/usr/lib/x86_64-linux-gnu/libtiff.so.5
+/usr/local/lib/libtiff.so.5
 boost_system boost_filesystem
 )
 

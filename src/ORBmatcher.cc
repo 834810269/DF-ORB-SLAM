@@ -1644,11 +1644,8 @@ int ORBmatcher::SearchByLK(Frame &CurrentFrame, const Frame &LastFrame, const fl
                 }
                 else{
                     nomapp++;
-                    vector<pair<cv::Mat,cv::KeyPoint>> &obslist=CurrentFrame.mvpobs[bestIdx2];
-                    obslist.clear();
-                    obslist.insert(obslist.begin(),LastFrame.mvpobs[i].begin(),LastFrame.mvpobs[i].end());
-                    obslist.push_back(make_pair(LastFrame.mTcw,LastFrame.mvKeysUn[i]));
                     CurrentFrame.mvTracked[bestIdx2]=LastFrame.mvTracked[i]+1;
+                    CurrentFrame.mvPreObsID[bestIdx2]=i;
                     //cout<<"Then   "<< CurrentFrame.mvTracked[bestIdx2] << ", "<<LastFrame.mvTracked[i]<<", "<<obslist.size()<<endl;
                     if (mbCheckOrientation) {
                         float rot = LastFrame.mvKeysUn[i].angle - CurrentFrame.mvKeysUn[bestIdx2].angle;
@@ -1701,7 +1698,7 @@ int ORBmatcher::SearchByLK(Frame &CurrentFrame, const Frame &LastFrame, const fl
                 for(size_t j=0, jend=rotHist_no[i].size(); j<jend; j++)
                 {
                     CurrentFrame.mvTracked[rotHist_no[i][j]]=1;
-                    CurrentFrame.mvpobs[rotHist_no[i][j]].clear();
+                    CurrentFrame.mvPreObsID[rotHist_no[i][j]]=-1;
                     //cout<<"delete wrong match without mappoint"<<endl;
                     nomapp--;
                 }

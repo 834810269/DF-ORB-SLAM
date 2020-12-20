@@ -33,6 +33,10 @@
 #include <mutex>
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
+// pointcloud mapping
+#include "pointcloudmapping.h"
+class PointCloudMapping;
+
 namespace ORB_SLAM2
 {
 
@@ -51,7 +55,7 @@ public:
 
 public:
 
-    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
+    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale, shared_ptr<PointCloudMapping> pPointCLoud);
 
     void SetTracker(Tracking* pTracker);
 
@@ -66,6 +70,10 @@ public:
 
     // This function will run in a separate thread
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
+
+    // pointcloud mapping
+    shared_ptr<PointCloudMapping> mpPointCloudMapping;
+    int loop_count = 0;
 
     bool isRunningGBA(){
         unique_lock<std::mutex> lock(mMutexGBA);
