@@ -233,26 +233,24 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     }
 
     // adaptive set bf and mdepthth --wang
-    //if(mImPre.empty()){
-	//double max;
-	//cv::minMaxLoc(mImDepth, NULL, &max);	
-	//mbf = double((int(max/10)+1)*10);
-        //cout << endl << "baseline mult fx: " << mbf << endl;
-    //}
-    //cv::Scalar mean;  //均值
-    //cv::Scalar stddev;  //标准差
+    if(mImPre.empty()){
+	    double max;
+	    cv::minMaxLoc(mImDepth, NULL, &max);
+	    mbf = double((int(max/10)+1)*10);
+	    cout << endl << "baseline mult fx: " << mbf << endl;
 
-    //cv::meanStdDev( mImDepth(cv::Rect(10,10,mImDepth.cols-10,mImDepth.rows-10)), mean, stddev );  //计算均值和标准差
-    //double mean_pxl = mean.val[0];
-    //double stddev_pxl = stddev.val[0];
-    //if(mImPre.empty()){
-    //mbf = mean_pxl+2.0*stddev_pxl;
-    //}        
-    //mThDepth = mean_pxl+0.5*stddev_pxl;
-    //cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
+        cv::Scalar mean;  //均值
+        cv::Scalar stddev;  //标准差
 
-    //}
-
+        cv::meanStdDev( mImDepth(cv::Rect(10,10,mImDepth.cols-10,mImDepth.rows-10)), mean, stddev );  //计算均值和标准差
+        double mean_pxl = mean.val[0];
+        double stddev_pxl = stddev.val[0];
+        //if(mImPre.empty()){
+            //mbf = mean_pxl+2.0*stddev_pxl;
+        //}
+        mThDepth = mean_pxl+stddev_pxl;
+        cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
+    }
 
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || mImDepth.type()!=CV_32F)
         mImDepth.convertTo(mImDepth,CV_32F,mDepthMapFactor);

@@ -41,13 +41,13 @@ if(PCL_FOUND)
 endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
-find_package(OpenMP REQUIRED)
-if(OPENMP_FOUND)
-   message("OPENMP FOUND")
-   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
+
+find_package(catkin REQUIRED COMPONENTS
+        roscpp
+        sensor_msgs
+        message_generation
+        tf
+)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -56,6 +56,7 @@ ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 ${OpenCV_INCLUDE_DIRS}
 ${PCL_INCLUDE_DIRS}
+${catkin_INCLUDE_DIRS}
 )
 
 add_definitions( ${PCL_DEFINITIONS} )
@@ -93,6 +94,7 @@ ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PCL_LIBRARIES}
+${catkin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 /usr/lib/x86_64-linux-gnu/libglog.so

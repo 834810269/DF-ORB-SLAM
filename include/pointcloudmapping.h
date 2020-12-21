@@ -84,50 +84,23 @@ protected:
 
     // voxel grid filter
     pcl::VoxelGrid<PointT> voxel;
-    double resolution_ = 0.04;
+    double resolution_ = 0.05;
 
 public:
     void setPointCloudMapUpdatedFlag(bool bFlag);
-    bool getPointCloudMapUpdatedFlag();
-
     bool getGlobalCloud(PointCloud::Ptr &pCloud);
-
-    bool getObstacleCloud(PointCloud::Ptr &pCloud);
-
-    bool getPlaneCloud(PointCloud::Ptr &pCloud);
-    bool getPlaneCoeffs(Eigen::Vector4d &planeCoeffs);
-    void setUsePlaneSegmentationFlag(bool bFlag);
-    bool getUsePlanSegmentationFlag();
-    void getPlaneTransformMatrix(const Eigen::Vector4d &target_plane, const Eigen::Vector4d &source_plane, Eigen::Matrix4d &T);
-    bool planeSACSegmentation(PointCloud::Ptr &pPclMap, PointCloud::Ptr &pPclPlane,
-                              Eigen::Vector4d &planeCoeffs, const Eigen::Vector4d &lastPlaneCoeffs,
-                              pcl::PointIndices::Ptr &pInliers);
 
     // ground <-- optical extrinsic matrix
     void updateTbc(const Eigen::Matrix3d &Rbc, const Eigen::Vector3d &tbc);
-    void updateTbc(const Eigen::Matrix4d &Tbc);
     void getTbc(Eigen::Matrix4d &Tbc);
 
 protected:
-    bool framePlaneSegmentation(PointCloud::Ptr &pPclFrame, PointCloud::Ptr &pPclPlane);
-
-    // plane segment flag and params
-    mutex mMtxPlaneSegmentation;
-    bool mbUsePlaneSegmentation;
-    bool mbSegmentPerFrame;
-    double mfPlaneDistThres;
-    double mfFramePlaneDistThres;
-    Eigen::Vector4d mPlaneCoeffs;
-    Eigen::Vector4d mLastPlaneCoeffs;
 
     // output point cloud
     mutex mMtxTbcUpdated;
     Eigen::Matrix4d mTbc;
     double mfCameraHeight;
 
-    // point cloud update
-    PointCloud::Ptr mpPclObstacle;
-    PointCloud::Ptr mpPclGroundPlane;
     // point cloud updated complete flag
     mutex mMtxPointCloudUpdated;
     PointCloud::Ptr mpPclGlobalMap;
