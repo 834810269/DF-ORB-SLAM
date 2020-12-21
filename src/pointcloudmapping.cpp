@@ -58,7 +58,9 @@ sensor_msgs::PointCloud2 global_points;
 sensor_msgs::PointCloud2 cur_points;
 
 PointCloudMapping::PointCloudMapping(const std::string &strSettingPath, bool bUseViewer) :
-        mbCloudBusy(false), mbLoopBusy(false), mbStop(false), mbShutDownFlag(false), mbPointCloudMapUpdated(false), mbUseViewer(bUseViewer)
+        mbCloudBusy(false), mbLoopBusy(false), mbStop(false), mbShutDownFlag(false),
+        mpPclGlobalMap(new PointCloudMapping::PointCloud()), mbPointCloudMapUpdated(false),
+        mbUseViewer(bUseViewer)
 {
     // parse parameters
     cv::FileStorage fsSetting = cv::FileStorage(strSettingPath, cv::FileStorage::READ);
