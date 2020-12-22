@@ -234,10 +234,10 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
     // adaptive set bf and mdepthth --wang
     if(mImPre.empty()){
-	    double max;
-	    cv::minMaxLoc(mImDepth, NULL, &max);
-	    mbf = double((int(max/10)+1)*10);
-	    cout << endl << "baseline mult fx: " << mbf << endl;
+	//double max;
+	//cv::minMaxLoc(mImDepth, NULL, &max);
+	//mbf = double((int(max/10)+1)*10);
+	//cout << endl << "baseline mult fx: " << mbf << endl;
 
         cv::Scalar mean;  //均值
         cv::Scalar stddev;  //标准差
@@ -246,9 +246,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
         double mean_pxl = mean.val[0];
         double stddev_pxl = stddev.val[0];
         //if(mImPre.empty()){
-            //mbf = mean_pxl+2.0*stddev_pxl;
+        mbf = mean_pxl+2.0*stddev_pxl;
         //}
-        mThDepth = mean_pxl+stddev_pxl;
+        mThDepth = mean_pxl+0.5*stddev_pxl;
         cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
     }
 

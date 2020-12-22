@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     //private_nh.param("use_rviz", use_rviz, false);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, false, true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, false, false);
 
     // publish necessary message of SLAM
     //ORB_SLAM2_DENSE::MessageUtils msgUtils(listener, &SLAM);
