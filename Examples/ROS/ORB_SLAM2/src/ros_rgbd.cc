@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     //private_nh.param("use_rviz", use_rviz, false);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, false, false);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD, true, false);
 
     // publish necessary message of SLAM
     //ORB_SLAM2_DENSE::MessageUtils msgUtils(listener, &SLAM);
@@ -153,7 +153,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 
     Tcw = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
 
-    PubCameraPose(Tcw);
+    //PubCameraPose(Tcw);
 
 }
 
